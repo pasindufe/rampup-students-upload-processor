@@ -7,9 +7,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { diskStorage } from 'multer';
+import { StudentUploadProducerService } from './student-upload-producer.service';
 
 @Controller('api/students')
 export class StudentUploadController {
+  constructor(private readonly producerService: StudentUploadProducerService) {}
+
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -28,20 +31,18 @@ export class StudentUploadController {
     }),
   )
   async uploadFile(@UploadedFile() file) {
-    const response = {
-      filename: file.filename,
-    };
-    return response;
+    try {
+      await this.producerService.pushToQueue(file.filename);
+      const response = {
+        filename: file.filename,
+      };
+      return response;
+    } catch (ex) {
+      console.log(ex);
+    }
   }
 }
 
 const generateFilename = (file) => {
   return `${Date.now()}${extname(file.originalname)}`;
 };
-
-// const imageFileFilter = (req, file, callback) => {
-//   if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-//     return callback(new Error('Only image files are allowed!'), false);
-//   }
-//   callback(null, true);
-// };
