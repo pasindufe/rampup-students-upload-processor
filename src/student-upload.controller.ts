@@ -8,6 +8,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { diskStorage } from 'multer';
 import { StudentUploadProducerService } from './student-upload-producer.service';
+import { File_UPLOAD_FOLDER } from './util/constants';
 
 @Controller('api/students')
 export class StudentUploadController {
@@ -17,7 +18,7 @@ export class StudentUploadController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads',
+        destination: `./${File_UPLOAD_FOLDER}`,
         filename: (req, file, callback) => {
           callback(null, generateFilename(file));
         },
@@ -32,8 +33,9 @@ export class StudentUploadController {
   )
   async uploadFile(@UploadedFile() file) {
     try {
-      await this.producerService.pushToQueue(file.filename);
+      const result = await this.producerService.pushToQueue(file.filename);
       const response = {
+        completed: result,
         filename: file.filename,
       };
       return response;
