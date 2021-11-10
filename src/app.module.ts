@@ -10,6 +10,7 @@ import {
   REDIS_DB_PORT,
   STUDENT_UPLOAD_QUEUE_NAME,
 } from './util/constants';
+import { WebSocketClientService } from './web-socket-client.service';
 
 @Module({
   imports: [
@@ -28,6 +29,10 @@ import {
     }),
   ],
   controllers: [StudentUploadController],
-  providers: [StudentUploadConsumerService, StudentUploadProducerService],
+  providers: [
+    StudentUploadConsumerService,
+    StudentUploadProducerService,
+    WebSocketClientService,
+  ],
 })
 export class AppModule {}

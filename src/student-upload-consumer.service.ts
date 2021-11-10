@@ -15,9 +15,12 @@ import {
 } from './util/constants';
 import { HttpStatus } from '@nestjs/common';
 import * as path from 'path';
+import { WebSocketClientService } from './web-socket-client.service';
 
 @Processor(STUDENT_UPLOAD_QUEUE_NAME)
 export class StudentUploadConsumerService {
+  constructor(private wsClientService: WebSocketClientService) {}
+
   @Process(STUDENT_UPLOAD_JOB_NAME)
   async processFile(job: Job<StudentUploadQueuePayload>) {
     try {
@@ -30,8 +33,16 @@ export class StudentUploadConsumerService {
       if (records && records.length > 0) {
         const result = await this.insertRecords(records);
         if (result) fs.unlinkSync(filePath);
+
+        //call to web socket
+        this.sendMessageToClient(
+          true,
+          `Job completed. (${records.length}) students added`,
+        );
       }
     } catch (ex) {
+      //call to web socket
+      this.sendMessageToClient(false, 'Job failed');
       console.log(ex);
     }
   }
@@ -59,7 +70,10 @@ export class StudentUploadConsumerService {
         });
       });
       return students;
-    } catch (ex) {}
+    } catch (ex) {
+      console.log(ex);
+      throw ex;
+    }
   }
 
   async insertRecords(records: Student[]): Promise<boolean> {
@@ -86,5 +100,9 @@ export class StudentUploadConsumerService {
         console.log(e);
         return false;
       });
+  }
+
+  sendMessageToClient(succeed: boolean, message: string) {
+    this.wsClientService.emitMessage({ succeed, message });
   }
 }
