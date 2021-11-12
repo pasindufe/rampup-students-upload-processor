@@ -32,6 +32,7 @@ export class StudentUploadConsumerService {
       const records = await this.readExcelFile(filePath);
       if (records && records.length > 0) {
         const result = await this.insertRecords(records);
+
         if (result) fs.unlinkSync(filePath);
 
         //call to web socket
@@ -49,6 +50,7 @@ export class StudentUploadConsumerService {
 
   async readExcelFile(fileName): Promise<Student[]> {
     const students: Student[] = [];
+
     try {
       const excelFile = xlsx.parse(fileName);
       await excelFile.map((sheet) => {
