@@ -1,5 +1,5 @@
 import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as fs from 'fs';
 
@@ -14,12 +14,17 @@ import * as path from 'path';
 export class StudentUploadProducerService {
   constructor(@InjectQueue(STUDENT_UPLOAD_QUEUE_NAME) private queue: Queue) {}
 
+  private readonly logger = new Logger(StudentUploadProducerService.name);
+
   async pushToQueue(fileName: string): Promise<boolean> {
     try {
       const job = await this.queue.add(STUDENT_UPLOAD_JOB_NAME, {
         fileName: fileName,
       });
-      if (job.finished()) return true;
+      if (job.finished()) {
+        this.logger.log(`job id ${job.id} queued`);
+        return true;
+      }
     } catch (ex) {
       const filePath = path.join(
         __dirname,
@@ -27,7 +32,7 @@ export class StudentUploadProducerService {
         fileName,
       );
       fs.unlinkSync(filePath);
-      console.log(ex);
+      this.logger.error(ex);
       return false;
     }
   }

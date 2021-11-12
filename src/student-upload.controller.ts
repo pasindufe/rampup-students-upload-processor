@@ -1,5 +1,6 @@
 import {
   Controller,
+  Logger,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -13,6 +14,8 @@ import { File_UPLOAD_FOLDER } from './util/constants';
 @Controller('api/students')
 export class StudentUploadController {
   constructor(private readonly producerService: StudentUploadProducerService) {}
+
+  private readonly logger = new Logger(StudentUploadController.name);
 
   @Post('upload')
   @UseInterceptors(
@@ -40,7 +43,7 @@ export class StudentUploadController {
       };
       return response;
     } catch (ex) {
-      console.log(ex);
+      this.logger.error(ex);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as io from 'socket.io-client';
 import { WebSocketClientResponse } from './types/web-socket-client-response';
 import { WEB_SOCKET_API_URL } from './util/constants';
@@ -13,11 +13,14 @@ export class WebSocketClientService {
     });
   }
 
+  private readonly logger = new Logger(WebSocketClientService.name);
+
   emitMessage(data: WebSocketClientResponse) {
     try {
       this.socket.emit('response', data);
+      this.logger.log(`${data} emitted to web-socket service`);
     } catch (ex) {
-      console.log(ex);
+      this.logger.error(ex);
     }
   }
 }

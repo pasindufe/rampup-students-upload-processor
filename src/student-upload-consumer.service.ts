@@ -13,13 +13,15 @@ import {
   File_UPLOAD_FOLDER,
   GRAPHQL_API_URL,
 } from './util/constants';
-import { HttpStatus } from '@nestjs/common';
+import { HttpStatus, Logger } from '@nestjs/common';
 import * as path from 'path';
 import { WebSocketClientService } from './web-socket-client.service';
 
 @Processor(STUDENT_UPLOAD_QUEUE_NAME)
 export class StudentUploadConsumerService {
   constructor(private wsClientService: WebSocketClientService) {}
+
+  private readonly logger = new Logger(StudentUploadConsumerService.name);
 
   @Process(STUDENT_UPLOAD_JOB_NAME)
   async processFile(job: Job<StudentUploadQueuePayload>) {
@@ -33,7 +35,10 @@ export class StudentUploadConsumerService {
       if (records && records.length > 0) {
         const result = await this.insertRecords(records);
 
-        if (result) fs.unlinkSync(filePath);
+        if (result) {
+          this.logger.log(`job id ${job.id} completed`);
+          fs.unlinkSync(filePath);
+        }
 
         //call to web socket
         this.sendMessageToClient(
@@ -43,8 +48,8 @@ export class StudentUploadConsumerService {
       }
     } catch (ex) {
       //call to web socket
+      this.logger.error(ex);
       this.sendMessageToClient(false, 'Job failed');
-      console.log(ex);
     }
   }
 
@@ -71,9 +76,10 @@ export class StudentUploadConsumerService {
           students.push(student);
         });
       });
+      this.logger.log(`excel file ${fileName} processed`);
       return students;
     } catch (ex) {
-      console.log(ex);
+      this.logger.error(ex);
       throw ex;
     }
   }
@@ -96,10 +102,11 @@ export class StudentUploadConsumerService {
       }),
     })
       .then((res) => {
+        this.logger.log(`${records.length} student(s) records sent to insert`);
         return res.status == HttpStatus.OK;
       })
-      .catch((e) => {
-        console.log(e);
+      .catch((ex) => {
+        this.logger.error(ex);
         return false;
       });
   }
